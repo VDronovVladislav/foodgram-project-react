@@ -7,6 +7,9 @@ class Ingredient(models.Model):
     name = models.CharField(max_length=200)
     measurement_unit = models.CharField(max_length=200)
 
+    def __str__(self):
+        return self.name
+
 
 class Tag(models.Model):
     name = models.CharField(max_length=200)
@@ -18,6 +21,9 @@ class Tag(models.Model):
             message='Поле содержит недопустимый символ'
         )]
     )
+
+    def __str__(self):
+        return self.name
 
 
 class Recipe(models.Model):
@@ -38,6 +44,9 @@ class Recipe(models.Model):
     )
     cooking_time = models.IntegerField(validators=[MinValueValidator(1)])
     tags = models.ManyToManyField(Tag)
+
+    def __str__(self):
+        return self.name
 
 
 class IngredientInRecipe(models.Model):
