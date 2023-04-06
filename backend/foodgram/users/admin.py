@@ -8,4 +8,5 @@ class UserAdmin(admin.ModelAdmin):
     list_filter = ('username', 'email')
     empty_value_display = '-пусто-'
 
+
 admin.site.register(User, UserAdmin)
