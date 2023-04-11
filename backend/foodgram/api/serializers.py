@@ -11,7 +11,13 @@ class TagSerializer(serializers.ModelSerializer):
         model = Tag
 
 
-class RecipeSerializer(serializers.ModelSerializer):
+class IngredientSerializer(serializers.ModelSerializer):
+    class Meta:
+        fields = ('id', 'name', 'measurement_unit')
+        model = Ingredient
+
+
+class RecipeReadSerializer(serializers.ModelSerializer):
     tags = TagSerializer(read_only=True, many=True)
 
     class Meta:

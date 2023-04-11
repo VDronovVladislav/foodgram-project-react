@@ -3,7 +3,8 @@ from rest_framework import filters, status, viewsets
 from rest_framework.response import Response
 from recipe.models import (Ingredient, Tag, Recipe, Subscribe, Favorite,
                            ShoppingList)
-from .serializers import (TagSerializer, RecipeSerializer)
+from .serializers import (TagSerializer, RecipeReadSerializer,
+                          IngredientSerializer)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -13,4 +14,9 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
-    serializer_class = RecipeSerializer
+    serializer_class = RecipeReadSerializer
+
+
+class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Ingredient.objects.all()
+    serializer_class = IngredientSerializer
