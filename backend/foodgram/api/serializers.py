@@ -91,20 +91,52 @@ class AuthTokenSerializer(serializers.Serializer):
 
 class SubscribeSerializer(serializers.ModelSerializer):
     """Сериализатор вьюсета SubscribeViewSet."""
-    author = UserReadSerializer(read_only=True)
-    recipes = RecipeForSubscribeSerializer(read_only=True, many=True)
-
-    def validate(self, data):
-        follower = self.context['request'].user
-        author_id = self.context['view'].kwargs.get('user_id')
-        author = get_object_or_404(User, id=author_id)
-        if self.context['request'].method == 'POST':
-            if Subscribe.objects.filter(author=author, follower=follower).exists():
-                raise serializers.ValidationError(
-                    'Вы уже подписались на данного пользователя!'
-                )
-        return data
+    # recipes = RecipeForSubscribeSerializer(read_only=True, many=True)
+    is_subscribed = serializers.SerializerMethodField()
 
     class Meta:
+        model = User
+        fields = ('email', 'id', 'username', 'first_name', 'last_name',
+                  'is_subscribed')
+    
+    def get_is_subscribed(self, obj):
+        request = self.context.get('request')
+        if request is None or request.user.is_anonymous:
+            return False
+        return Subscribe.objects.filter(follower=request.user, author=obj).exists()
+
+
+class AddSubscriptionSerializer(serializers.ModelSerializer):
+    """Сериализатор для добавления подписки."""
+    class Meta:
         model = Subscribe
-        fields = ('author', 'follower', 'recipes')
+        fields = ('author', 'follower')
+
+        validators = [ 
+            UniqueTogetherValidator(
+                queryset=Subscribe.objects.all(),
+                fields=('follower', 'author'),
+                message='Вы уже подписались на данного пользователя!'
+            )
+        ]
+
+
+class ShortRecipeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Recipe
+        fields = ('id', 'name', 'image', 'cooking_time')
+
+
+class AddFavoriteSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Favorite
+        fields = ('recipe', 'user')
+
+        validators = [
+            UniqueTogetherValidator(
+                queryset=Favorite.objects.all(),
+                fields=('recipe', 'user'),
+                message='Вы уже добавили этот рецепт!'
+            )
+        ]

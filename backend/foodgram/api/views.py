@@ -14,7 +14,8 @@ from recipe.models import (Ingredient, Tag, Recipe, Subscribe, Favorite,
 from .serializers import (TagSerializer, RecipeReadSerializer,
                           IngredientSerializer, UserReadSerializer,
                           AuthTokenSerializer, UserSerializer,
-                          SubscribeSerializer)
+                          SubscribeSerializer, AddSubscriptionSerializer,
+                          AddFavoriteSerializer, ShortRecipeSerializer)
 from .mixins import CreateDeleteViewSet
 
 
@@ -91,40 +92,72 @@ class Logout(APIView):
         )
 
 
-class SubscribeViewSet(viewsets.ModelViewSet):
-    serializer_class = SubscribeSerializer
+# class SubscribeViewSet(viewsets.ModelViewSet):
+#     serializer_class = SubscribeSerializer
 
-    def get_author(self):
-        return get_object_or_404(User, id=self.kwargs.get('user_id'))
+#     def get_author(self):
+#         return get_object_or_404(User, id=self.kwargs.get('user_id'))
 
-    def perform_create(self, serializer):
-        serializer.save(follower=self.request.user, author=self.get_author())
+#     def perform_create(self, serializer):
+#         serializer.save(follower=self.request.user, author=self.get_author())
 
-    def perform_destroy(self, instance):
-        instance.delete()
+#     def get_queryset(self):
+#         return Subscribe.objects.filter(follower=self.request.user, author=self.get_author())
 
-    @action(detail=False, methods=['DELETE'], url_path='delete')
-    def my_custom_destroy(self, request, *args, **kwargs):
-        result = Subscribe.objects.filter(follower=self.request.user, author=self.get_author())
-        result.delete()
+#     def perform_destroy(self, instance):
+#         instance.delete()
+
+#     @action(detail=False, methods=['DELETE'], url_path='delete')
+#     def my_custom_destroy(self, request, *args, **kwargs):
+#         result = Subscribe.objects.filter(follower=self.request.user, author=self.get_author())
+#         result.delete()
 
 
-# class SubscribeView(APIView):
-#     def post(self, request, pk):
-#         follower = request.user
-#         data = {
-#             'follower': follower.id,
-#             'author': pk
-#         }
-#         context = {'request': request}
-#         serializer = SubscribeSerializer(data=data, context=context)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+class SubscribeView(APIView):
+    def post(self, request, pk):
+        follower = request.user
+        data = {
+            'follower': follower.id,
+            'author': pk
+        }
+        context = {'request': request}
+        serializer = AddSubscriptionSerializer(data=data, context=context)
+        if not serializer.is_valid():
+            return Response(
+                serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
+        serializer.save()
+        author = User.objects.get(id=pk)
+        serializer = SubscribeSerializer(author)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
     
-#     def delete(self, request, pk):
-#         follower = request.user
-#         author = get_object_or_404(User, pk=pk)
-#         Subscribe.objects.filter(follower=follower, author=author).delete()
-#         return Response(status=status.HTTP_204_NO_CONTENT)
+    def delete(self, request, pk):
+        follower = request.user
+        author = get_object_or_404(User, pk=pk)
+        Subscribe.objects.filter(follower=follower, author=author).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class FavoriteView(APIView):
+    def post(self, request, id):
+        user = request.user
+        data = {
+            'user': user.id,
+            'recipe': id
+        }
+        context = {'request': request}
+        serializer = AddFavoriteSerializer(data=data, context=context)
+        if not serializer.is_valid():
+            return Response(
+                serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
+        serializer.save()
+        recipe = Recipe.objects.get(id=id)
+        serializer = ShortRecipeSerializer(recipe)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    def delete(self, request, id):
+        user = request.user
+        recipe = get_object_or_404(Recipe, id=id)
+        Recipe.objects.filter(user=user, recipe=recipe).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
