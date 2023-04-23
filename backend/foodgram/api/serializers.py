@@ -53,10 +53,24 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         return obj.shopping_list.filter(user=request_user.id).exists()
 
 
-class RecipeForSubscribeSerializer(serializers.ModelSerializer):
+class ShortRecipeSerializer(serializers.ModelSerializer):
     class Meta:
-        fields = ('id', 'name', 'image', 'cooking_time')
         model = Recipe
+        fields = ('id', 'name', 'image', 'cooking_time')
+
+
+class AddFavoriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Favorite
+        fields = ('recipe', 'user')
+
+        validators = [
+            UniqueTogetherValidator(
+                queryset=Favorite.objects.all(),
+                fields=('recipe', 'user'),
+                message='Вы уже добавили этот рецепт!'
+            )
+        ]
 
 
 class UserReadSerializer(serializers.ModelSerializer):
@@ -93,17 +107,23 @@ class SubscribeSerializer(serializers.ModelSerializer):
     """Сериализатор вьюсета SubscribeViewSet."""
     # recipes = RecipeForSubscribeSerializer(read_only=True, many=True)
     is_subscribed = serializers.SerializerMethodField()
+    recipes_count = serializers.SerializerMethodField()
+    recipes = ShortRecipeSerializer(read_only=True, many=True)
 
     class Meta:
         model = User
         fields = ('email', 'id', 'username', 'first_name', 'last_name',
-                  'is_subscribed')
-    
+                  'is_subscribed', 'recipes', 'recipes_count')
+
     def get_is_subscribed(self, obj):
         request = self.context.get('request')
         if request is None or request.user.is_anonymous:
             return False
-        return Subscribe.objects.filter(follower=request.user, author=obj).exists()
+        return Subscribe.objects.filter(follower=request.user,
+                                        author=obj).exists()
+
+    def get_recipes_count(self, obj):
+        return obj.recipes.count()
 
 
 class AddSubscriptionSerializer(serializers.ModelSerializer):
@@ -121,22 +141,30 @@ class AddSubscriptionSerializer(serializers.ModelSerializer):
         ]
 
 
-class ShortRecipeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Recipe
-        fields = ('id', 'name', 'image', 'cooking_time')
-
-
-class AddFavoriteSerializer(serializers.ModelSerializer):
+class SubscriptionSerializer(serializers.ModelSerializer):
+    author = SubscribeSerializer()
 
     class Meta:
-        model = Favorite
-        fields = ('recipe', 'user')
+        model = Subscribe
+        fields = ('author',)
+
+
+class AddShoppingCartSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ShoppingList
+        fields = ('user', 'recipe')
 
         validators = [
             UniqueTogetherValidator(
-                queryset=Favorite.objects.all(),
+                queryset=ShoppingList.objects.all(),
                 fields=('recipe', 'user'),
-                message='Вы уже добавили этот рецепт!'
+                message='Вы уже добавили этот рецепт в список покупок!'
             )
         ]
+
+
+class ShoppingCartSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = ShoppingList
+        fields = ('recipe', 'user')

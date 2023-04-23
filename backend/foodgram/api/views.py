@@ -6,6 +6,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.views import APIView
 from rest_framework.decorators import action, api_view
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 from users.models import User
@@ -15,7 +16,10 @@ from .serializers import (TagSerializer, RecipeReadSerializer,
                           IngredientSerializer, UserReadSerializer,
                           AuthTokenSerializer, UserSerializer,
                           SubscribeSerializer, AddSubscriptionSerializer,
-                          AddFavoriteSerializer, ShortRecipeSerializer)
+                          AddFavoriteSerializer, ShortRecipeSerializer,
+                          SubscriptionSerializer, AddShoppingCartSerializer,
+                          ShoppingCartSerializer)
+
 from .mixins import CreateDeleteViewSet
 
 
@@ -138,6 +142,17 @@ class SubscribeView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+class SubscriptionViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = SubscriptionSerializer
+    # serializer_class = SubscribeSerializer
+    
+    # def get_queryset(self):
+    #     return User.objects.filter(follower__id=self.request.user.id)
+
+    def get_queryset(self):
+        return self.request.user.follower.all()
+
+
 class FavoriteView(APIView):
     def post(self, request, id):
         user = request.user
@@ -155,9 +170,41 @@ class FavoriteView(APIView):
         recipe = Recipe.objects.get(id=id)
         serializer = ShortRecipeSerializer(recipe)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    
+
     def delete(self, request, id):
         user = request.user
         recipe = get_object_or_404(Recipe, id=id)
         Favorite.objects.filter(user=user, recipe=recipe).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ShoppingCartView(APIView):
+    def post(self, request, id):
+        user = request.user
+        data = {
+            'user': user.id,
+            'recipe': id
+        }
+        context = {'request': request}
+        serializer = AddShoppingCartSerializer(data=data, context=context)
+        if not serializer.is_valid():
+            return Response(
+                serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
+        serializer.save()
+        recipe = Recipe.objects.get(id=id)
+        serializer = ShortRecipeSerializer(recipe)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def delete(self, request, id):
+        user = request.user
+        recipe = get_object_or_404(Recipe, id=id)
+        ShoppingList.objects.filter(user=user, recipe=recipe).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class DownloadViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = ShoppingCartSerializer
+    
+    def get_queryset(self):
+        return ShoppingList.objects.filter(user=self.request.user)
