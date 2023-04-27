@@ -1,3 +1,5 @@
+from django.db.models import F, Sum
+from django.http import HttpResponse
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from rest_framework import filters, status, viewsets, generics
@@ -11,16 +13,14 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 from users.models import User
 from recipe.models import (Ingredient, Tag, Recipe, Subscribe, Favorite,
-                           ShoppingList)
+                           ShoppingList, IngredientInRecipe)
 from .serializers import (TagSerializer, RecipeReadSerializer,
                           IngredientSerializer, UserReadSerializer,
                           AuthTokenSerializer, UserSerializer,
                           SubscribeSerializer, AddSubscriptionSerializer,
                           AddFavoriteSerializer, ShortRecipeSerializer,
                           SubscriptionSerializer, AddShoppingCartSerializer,
-                          ShoppingCartSerializer)
-
-from .mixins import CreateDeleteViewSet
+                          RecipePostSerializer)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -30,7 +30,17 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
-    serializer_class = RecipeReadSerializer
+    
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return RecipeReadSerializer
+        return RecipePostSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
+    def perform_update(self, serializer):
+        serializer.save(author=self.request.user)
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
@@ -89,6 +99,7 @@ def get_jwt_token(request):
 
 
 class Logout(APIView):
+
     def post(self, request):
         request.user.auth_token.delete()
         return Response(
@@ -118,6 +129,7 @@ class Logout(APIView):
 
 
 class SubscribeView(APIView):
+
     def post(self, request, pk):
         follower = request.user
         data = {
@@ -154,6 +166,7 @@ class SubscriptionViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class FavoriteView(APIView):
+
     def post(self, request, id):
         user = request.user
         data = {
@@ -179,6 +192,7 @@ class FavoriteView(APIView):
 
 
 class ShoppingCartView(APIView):
+
     def post(self, request, id):
         user = request.user
         data = {
@@ -203,8 +217,26 @@ class ShoppingCartView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class DownloadViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = ShoppingCartSerializer
-    
-    def get_queryset(self):
-        return ShoppingList.objects.filter(user=self.request.user)
+class DownloadView(APIView):
+
+    def get(self, request):
+        items = IngredientInRecipe.objects.select_related(
+            'recipe', 'ingredient'
+        ).filter(recipe__shopping_list__user=request.user)
+        items = items.values(
+            'ingredient__name', 'ingredient__measurement_unit'
+        ).annotate(
+            name=F('ingredient__name'),
+            units=F('ingredient__measurement_unit'),
+            total=Sum('amount'),
+        ).order_by('-total')
+
+        text = '\n'.join([
+            f"{item['name']} ({item['units']}) - {item['total']}"
+            for item in items
+        ])
+        filename = "foodgram_shopping_cart.txt"
+        response = HttpResponse(text, content_type='text/plain')
+        response['Content-Disposition'] = f'attachment; filename{filename}'
+
+        return response
