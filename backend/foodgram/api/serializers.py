@@ -3,6 +3,7 @@ import base64
 from django.contrib.auth import authenticate
 from django.shortcuts import get_object_or_404
 from django.core.files.base import ContentFile
+from djoser.serializers import SetPasswordSerializer
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 from recipe.models import (Ingredient, Tag, Recipe, Subscribe, Favorite,
@@ -11,6 +12,7 @@ from users.models import User
 
 
 class Base64ImageField(serializers.ImageField):
+    """Сериализатор сохранения картинок."""
     def to_internal_value(self, data):
         if isinstance(data, str) and data.startswith('data:image'):
             format, imgstr = data.split(';base64,')

@@ -1,6 +1,7 @@
 from django.db.models import F, Sum
 from django.http import HttpResponse
 from django.contrib.auth import get_user_model
+from django.contrib.auth.hashers import check_password
 from django.shortcuts import get_object_or_404
 from rest_framework import filters, status, viewsets, generics
 from rest_framework.response import Response
@@ -24,13 +25,15 @@ from .serializers import (TagSerializer, RecipeReadSerializer,
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
+    """Вьюсет тегов."""
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
+    """Вьюсет рецептов."""
     queryset = Recipe.objects.all()
-    
+
     def get_serializer_class(self):
         if self.request.method == 'GET':
             return RecipeReadSerializer
@@ -44,11 +47,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
+    """Вьюсет ингредиентов."""
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
 
 
 class UserViewSet(viewsets.ModelViewSet):
+    """Вьюсет пользователя."""
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
@@ -60,8 +65,10 @@ class UserViewSet(viewsets.ModelViewSet):
         user = request.user
         if request.method == 'POST':
             serializer = UserSerializer(
-                user, data=request.data,
-                partial=True)
+                user,
+                data=request.data,
+                partial=True
+            )
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -69,25 +76,16 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-# class CustomAuthToken(ObtainAuthToken):
-#     def post(self, request, *args, **kwargs):
-#         serializer = AuthTokenSerializer(data=request.data, context={'request': request})
-#         serializer.is_valid(raise_exception=True)
-#         user = serializer.validated_data['user']
-#         token, created = Token.objects.get_or_create(user=user)
-#         return Response(
-#             {'auth_token': str(token)},
-#             status=status.HTTP_200_OK
-#         )
-
 @api_view(['POST'])
 def get_jwt_token(request):
     """Получение токена."""
     serializer = AuthTokenSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     user = get_object_or_404(
-        User, email=serializer.validated_data['email'],
-        password=serializer.validated_data['password'])
+        User,
+        email=serializer.validated_data['email'],
+        password=serializer.validated_data['password']
+    )
     if user:
         token = AccessToken.for_user(user)
         Token.objects.get_or_create(user=user, key=token)
@@ -97,35 +95,45 @@ def get_jwt_token(request):
         status=status.HTTP_400_BAD_REQUEST
     )
 
+@api_view(['POST'])
+def delete_jwt_token(request):
+    """Удаление токена."""
+    request.user.auth_token.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)
 
-class Logout(APIView):
 
-    def post(self, request):
-        request.user.auth_token.delete()
+class CustomSetPasswordView(APIView):
+
+    def post(self, request, *args, **kwargs):
+        current_password = request.data.get('current_password')
+        new_password = request.data.get('new_password')
+
+        if not current_password or not new_password:
+            return Response(
+                {'error': 'Вы забыли ввести пароль или новый пароль'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if current_password == new_password:
+            return Response(
+                {'error': 'Старый и новый пароли совпадают!'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user = request.user
+        if user.password != current_password:
+            return Response(
+                {'error': 'Неверный пароль!'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user.password = new_password
+        user.save()
+
         return Response(
-            status=status.HTTP_204_NO_CONTENT
+            {'message': 'Пароль обновлен!'},
+            status=status.HTTP_200_OK
         )
-
-
-# class SubscribeViewSet(viewsets.ModelViewSet):
-#     serializer_class = SubscribeSerializer
-
-#     def get_author(self):
-#         return get_object_or_404(User, id=self.kwargs.get('user_id'))
-
-#     def perform_create(self, serializer):
-#         serializer.save(follower=self.request.user, author=self.get_author())
-
-#     def get_queryset(self):
-#         return Subscribe.objects.filter(follower=self.request.user, author=self.get_author())
-
-#     def perform_destroy(self, instance):
-#         instance.delete()
-
-#     @action(detail=False, methods=['DELETE'], url_path='delete')
-#     def my_custom_destroy(self, request, *args, **kwargs):
-#         result = Subscribe.objects.filter(follower=self.request.user, author=self.get_author())
-#         result.delete()
 
 
 class SubscribeView(APIView):
@@ -156,10 +164,6 @@ class SubscribeView(APIView):
 
 class SubscriptionViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = SubscriptionSerializer
-    # serializer_class = SubscribeSerializer
-    
-    # def get_queryset(self):
-    #     return User.objects.filter(follower__id=self.request.user.id)
 
     def get_queryset(self):
         return self.request.user.follower.all()
