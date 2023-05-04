@@ -1,15 +1,12 @@
 from django.db.models import F, Sum
 from django.http import HttpResponse
-from django.contrib.auth import get_user_model
-from django.contrib.auth.hashers import check_password
 from django.shortcuts import get_object_or_404
-from rest_framework import filters, status, viewsets, generics
+from rest_framework import status, viewsets
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
-from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.views import APIView
 from rest_framework.decorators import action, api_view
-from rest_framework.pagination import PageNumberPagination
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 from users.models import User
@@ -21,18 +18,24 @@ from .serializers import (TagSerializer, RecipeReadSerializer,
                           SubscribeSerializer, AddSubscriptionSerializer,
                           AddFavoriteSerializer, ShortRecipeSerializer,
                           SubscriptionSerializer, AddShoppingCartSerializer,
-                          RecipePostSerializer)
+                          RecipePostSerializer,)
+from .permissions import AuthorOrReadOnly, ReadOnly
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
-    """Вьюсет тегов."""
+    """Вьюсет просмотра тегов."""
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+    permission_classes = (ReadOnly,)
+    pagination_class = None
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
     """Вьюсет рецептов."""
     queryset = Recipe.objects.all()
+    permission_classes = (AuthorOrReadOnly,)
+    filter_backends = (DjangoFilterBackend,)
+    filterset_fields = ('tags',)
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
@@ -47,9 +50,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
-    """Вьюсет ингредиентов."""
+    """Вьюсет просмотра ингредиентов."""
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
+    permission_classes = (ReadOnly,)
+    pagination_class = None
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -95,6 +100,7 @@ def get_jwt_token(request):
         status=status.HTTP_400_BAD_REQUEST
     )
 
+
 @api_view(['POST'])
 def delete_jwt_token(request):
     """Удаление токена."""
@@ -103,7 +109,7 @@ def delete_jwt_token(request):
 
 
 class CustomSetPasswordView(APIView):
-
+    """Вью смены пароля."""
     def post(self, request, *args, **kwargs):
         current_password = request.data.get('current_password')
         new_password = request.data.get('new_password')
@@ -113,7 +119,7 @@ class CustomSetPasswordView(APIView):
                 {'error': 'Вы забыли ввести пароль или новый пароль'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         if current_password == new_password:
             return Response(
                 {'error': 'Старый и новый пароли совпадают!'},
@@ -137,7 +143,7 @@ class CustomSetPasswordView(APIView):
 
 
 class SubscribeView(APIView):
-
+    """Вью подписки/отписки от пользователя"""
     def post(self, request, pk):
         follower = request.user
         data = {
@@ -154,7 +160,7 @@ class SubscribeView(APIView):
         author = User.objects.get(id=pk)
         serializer = SubscribeSerializer(author)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    
+
     def delete(self, request, pk):
         follower = request.user
         author = get_object_or_404(User, pk=pk)
@@ -163,6 +169,7 @@ class SubscribeView(APIView):
 
 
 class SubscriptionViewSet(viewsets.ReadOnlyModelViewSet):
+    """Вьюсет просмотра подписок пользователя."""
     serializer_class = SubscriptionSerializer
 
     def get_queryset(self):
@@ -170,7 +177,7 @@ class SubscriptionViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class FavoriteView(APIView):
-
+    """Вью добавления/удаления рецепта из избранного."""
     def post(self, request, id):
         user = request.user
         data = {
@@ -196,7 +203,7 @@ class FavoriteView(APIView):
 
 
 class ShoppingCartView(APIView):
-
+    """Вью добавления/удаления рецепта из списка покупок."""
     def post(self, request, id):
         user = request.user
         data = {
@@ -222,7 +229,7 @@ class ShoppingCartView(APIView):
 
 
 class DownloadView(APIView):
-
+    """Вью загрузки списка покупок."""
     def get(self, request):
         items = IngredientInRecipe.objects.select_related(
             'recipe', 'ingredient'

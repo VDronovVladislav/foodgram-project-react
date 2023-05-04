@@ -1,9 +1,6 @@
 import base64
 
-from django.contrib.auth import authenticate
-from django.shortcuts import get_object_or_404
 from django.core.files.base import ContentFile
-from djoser.serializers import SetPasswordSerializer
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 from recipe.models import (Ingredient, Tag, Recipe, Subscribe, Favorite,
@@ -22,6 +19,7 @@ class Base64ImageField(serializers.ImageField):
 
 
 class IngredientInRecipeSerializer(serializers.ModelSerializer):
+    """Сериализатор ингредиентов в рецептах."""
     recipe = serializers.PrimaryKeyRelatedField(read_only=True)
     id = serializers.PrimaryKeyRelatedField(
         queryset=Ingredient.objects.all()
@@ -34,18 +32,21 @@ class IngredientInRecipeSerializer(serializers.ModelSerializer):
 
 
 class TagSerializer(serializers.ModelSerializer):
+    """Сериазизатор тегов."""
     class Meta:
         fields = ('id', 'name', 'color', 'slug')
         model = Tag
 
 
 class IngredientSerializer(serializers.ModelSerializer):
+    """Сериализатор ингредиентов."""
     class Meta:
         fields = ('id', 'name', 'measurement_unit')
         model = Ingredient
 
 
 class UserReadSerializer(serializers.ModelSerializer):
+    """Сериализатор просмотра пользователей."""
     is_subscribed = serializers.SerializerMethodField()
 
     class Meta:
@@ -62,6 +63,7 @@ class UserReadSerializer(serializers.ModelSerializer):
 
 
 class RecipeReadSerializer(serializers.ModelSerializer):
+    """Сериализатор просмотра рецептов."""
     tags = TagSerializer(read_only=True, many=True)
     ingredients = IngredientSerializer(read_only=True, many=True)
     is_favorited = serializers.SerializerMethodField()
@@ -85,6 +87,7 @@ class RecipeReadSerializer(serializers.ModelSerializer):
 
 
 class RecipePostSerializer(serializers.ModelSerializer):
+    """Сериализатор созданя рецептов."""
     image = Base64ImageField()
     ingredients = IngredientInRecipeSerializer(many=True)
     tags = serializers.PrimaryKeyRelatedField(
@@ -164,12 +167,14 @@ class RecipePostSerializer(serializers.ModelSerializer):
 
 
 class ShortRecipeSerializer(serializers.ModelSerializer):
+    """Мини-сериализатор просмотра рецептов."""
     class Meta:
         model = Recipe
         fields = ('id', 'name', 'image', 'cooking_time')
 
 
 class AddFavoriteSerializer(serializers.ModelSerializer):
+    """Сериализатор добавления рецепта в избранное."""
     class Meta:
         model = Favorite
         fields = ('recipe', 'user')
@@ -184,6 +189,7 @@ class AddFavoriteSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
+    """Сериализатор создания пользователя."""
     class Meta:
         fields = ('email', 'username', 'first_name', 'last_name', 'password')
         model = User
@@ -198,6 +204,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class AuthTokenSerializer(serializers.Serializer):
+    """Сериализатор получения токена."""
     email = serializers.EmailField()
     password = serializers.CharField()
 
@@ -207,8 +214,7 @@ class AuthTokenSerializer(serializers.Serializer):
 
 
 class SubscribeSerializer(serializers.ModelSerializer):
-    """Сериализатор вьюсета SubscribeViewSet."""
-    # recipes = RecipeForSubscribeSerializer(read_only=True, many=True)
+    """Сериализатор подписки пользователя."""
     is_subscribed = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
     recipes = ShortRecipeSerializer(read_only=True, many=True)
@@ -235,7 +241,7 @@ class AddSubscriptionSerializer(serializers.ModelSerializer):
         model = Subscribe
         fields = ('author', 'follower')
 
-        validators = [ 
+        validators = [
             UniqueTogetherValidator(
                 queryset=Subscribe.objects.all(),
                 fields=('follower', 'author'),
@@ -245,6 +251,7 @@ class AddSubscriptionSerializer(serializers.ModelSerializer):
 
 
 class SubscriptionSerializer(serializers.ModelSerializer):
+    """Сериализатор просмотра подписок пользователя."""
     author = SubscribeSerializer()
 
     class Meta:
@@ -253,6 +260,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 
 
 class AddShoppingCartSerializer(serializers.ModelSerializer):
+    """Сериализатор добавления рецепта в список покупок."""
     class Meta:
         model = ShoppingList
         fields = ('user', 'recipe')
