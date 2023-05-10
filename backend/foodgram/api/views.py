@@ -1,25 +1,26 @@
 from django.db.models import F, Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from rest_framework import status, viewsets
-from rest_framework.response import Response
-from rest_framework.authtoken.models import Token
-from rest_framework.views import APIView
-from rest_framework.decorators import action, api_view
 from django_filters.rest_framework import DjangoFilterBackend
+from recipe.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
+                           ShoppingList, Subscribe, Tag)
+from rest_framework import status, viewsets
+from rest_framework.authtoken.models import Token
+from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import AccessToken
 from users.models import User
-from recipe.models import (Ingredient, Tag, Recipe, Subscribe, Favorite,
-                           ShoppingList, IngredientInRecipe)
-from .serializers import (TagSerializer, RecipeReadSerializer,
-                          IngredientSerializer, UserReadSerializer,
-                          AuthTokenSerializer, UserSerializer,
-                          SubscribeSerializer, AddSubscriptionSerializer,
-                          AddFavoriteSerializer, ShortRecipeSerializer,
-                          SubscriptionSerializer, AddShoppingCartSerializer,
-                          RecipePostSerializer,)
+
+from .filters import TagsFilter
 from .permissions import AuthorOrReadOnly, ReadOnly
+from .serializers import (AddFavoriteSerializer, AddShoppingCartSerializer,
+                          AddSubscriptionSerializer, AuthTokenSerializer,
+                          IngredientSerializer, RecipePostSerializer,
+                          RecipeReadSerializer, ShortRecipeSerializer,
+                          SubscribeSerializer, SubscriptionSerializer,
+                          TagSerializer, UserReadSerializer, UserSerializer)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -35,7 +36,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     permission_classes = (AuthorOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
-    filterset_fields = ('tags',)
+    filterset_class = TagsFilter
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
@@ -82,6 +83,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def get_jwt_token(request):
     """Получение токена."""
     serializer = AuthTokenSerializer(data=request.data)
@@ -94,7 +96,7 @@ def get_jwt_token(request):
     if user:
         token = AccessToken.for_user(user)
         Token.objects.get_or_create(user=user, key=token)
-        return Response({'token': f'{token}'}, status=status.HTTP_200_OK)
+        return Response({'token': f'{token}'}, status=status.HTTP_201_CREATED)
     return Response(
         {'message': 'Пользователь не обнаружен'},
         status=status.HTTP_400_BAD_REQUEST
