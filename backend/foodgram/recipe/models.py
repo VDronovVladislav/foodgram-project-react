@@ -1,4 +1,5 @@
 from django.core.validators import MinValueValidator, RegexValidator
+from django.core.exceptions import ValidationError
 from django.db import models
 from users.models import User
 
@@ -34,13 +35,13 @@ class Recipe(models.Model):
     )
     name = models.CharField(max_length=200)
     image = models.ImageField(
-        upload_to='receipts/images/',
+        upload_to='recipes/images/',
         default=None
     )
     text = models.TextField()
     ingredients = models.ManyToManyField(
         Ingredient,
-        through='IngredientInRecipe'
+        through='IngredientInRecipe',
     )
     cooking_time = models.IntegerField(validators=[MinValueValidator(1)])
     tags = models.ManyToManyField(Tag)
@@ -48,11 +49,26 @@ class Recipe(models.Model):
     def __str__(self):
         return self.name
 
+    def clean(self):
+        super().clean()
+        if self.ingredients.count() < 1:
+            raise ValidationError(
+                "Рецепт должен содержать хотя бы один ингредиент."
+            )
+
 
 class IngredientInRecipe(models.Model):
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
     ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
     amount = models.IntegerField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['recipe', 'ingredient'],
+                name='unique_recipe_ingredient'
+            )
+        ]
 
 
 class Subscribe(models.Model):

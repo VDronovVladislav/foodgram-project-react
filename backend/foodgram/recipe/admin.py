@@ -12,12 +12,14 @@ class RecipeIngredientsInLine(admin.TabularInline):
 class IngredientAdmin(admin.ModelAdmin):
     list_display = ('pk', 'name', 'measurement_unit',)
     list_filter = ('name',)
+    search_fields = ('name',)
     empty_value_display = '-пусто-'
 
 
 class RecipeAdmin(admin.ModelAdmin):
     list_display = ('pk', 'name', 'author', 'number_of_additions',)
     list_filter = ('name', 'author', 'tags')
+    search_fields = ('name', 'author', 'tags')
     empty_value_display = '-пусто-'
     inlines = (RecipeIngredientsInLine,)
 

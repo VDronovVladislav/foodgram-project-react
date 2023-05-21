@@ -2,8 +2,6 @@ from django.db.models import F, Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from recipe.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
-                           ShoppingList, Subscribe, Tag)
 from rest_framework import status, viewsets
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action, api_view, permission_classes
@@ -11,8 +9,10 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import AccessToken
-from users.models import User
 
+from users.models import User
+from recipe.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
+                           ShoppingList, Subscribe, Tag)
 from .filters import TagsFilter
 from .permissions import AuthorOrReadOnly, ReadOnly
 from .serializers import (AddFavoriteSerializer, AddShoppingCartSerializer,
@@ -154,10 +154,7 @@ class SubscribeView(APIView):
         }
         context = {'request': request}
         serializer = AddSubscriptionSerializer(data=data, context=context)
-        if not serializer.is_valid():
-            return Response(
-                serializer.errors, status=status.HTTP_400_BAD_REQUEST
-            )
+        serializer.is_valid(raise_exception=True)
         serializer.save()
         author = User.objects.get(id=pk)
         serializer = SubscribeSerializer(author)
@@ -188,10 +185,7 @@ class FavoriteView(APIView):
         }
         context = {'request': request}
         serializer = AddFavoriteSerializer(data=data, context=context)
-        if not serializer.is_valid():
-            return Response(
-                serializer.errors, status=status.HTTP_400_BAD_REQUEST
-            )
+        serializer.is_valid(raise_exception=True)
         serializer.save()
         recipe = Recipe.objects.get(id=id)
         serializer = ShortRecipeSerializer(recipe)
@@ -214,10 +208,7 @@ class ShoppingCartView(APIView):
         }
         context = {'request': request}
         serializer = AddShoppingCartSerializer(data=data, context=context)
-        if not serializer.is_valid():
-            return Response(
-                serializer.errors, status=status.HTTP_400_BAD_REQUEST
-            )
+        serializer.is_valid(raise_exception=True)
         serializer.save()
         recipe = Recipe.objects.get(id=id)
         serializer = ShortRecipeSerializer(recipe)

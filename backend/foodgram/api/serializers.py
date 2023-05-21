@@ -3,6 +3,7 @@ import base64
 from django.core.files.base import ContentFile
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
+
 from recipe.models import (Ingredient, Tag, Recipe, Subscribe, Favorite,
                            ShoppingList, IngredientInRecipe)
 from users.models import User
@@ -117,28 +118,39 @@ class RecipePostSerializer(serializers.ModelSerializer):
         for ingredient in ingredients:
             if ingredient in ingredient_list:
                 raise serializers.ValidationError(
-                    'Ингридиенты не должны повторяться'
+                    'Ингредиенты не должны повторяться'
                 )
             ingredient_list.append(ingredient)
         if int(ingredient['amount']) < 1:
             raise serializers.ValidationError(
-                'Ингридиент не может быть нулевым или отрицательным!'
+                'Ингредиент не может быть нулевым или отрицательным!'
             )
         return data
 
-    def create(self, validated_data):
-        ingredients = validated_data.pop('ingredients')
-        tags = validated_data.pop('tags')
-        recipe = Recipe.objects.create(**validated_data)
-        recipe.tags.set(tags)
-        ingredient_creation = [
+    def validate_cooking_time(self, data):
+        cooking_time = self.initial_data.get('cooking_time')
+        if cooking_time <= 0:
+            raise serializers.ValidationError(
+                'Время приготовления не может быть нулевым или отрицательным!'
+            )
+        return data
+
+    def ingredient_creation(self, recipe, ingredients):
+        creation = [
             IngredientInRecipe(
                 recipe=recipe,
                 ingredient=ingredient['id'],
                 amount=ingredient['amount']
             ) for ingredient in ingredients
         ]
-        IngredientInRecipe.objects.bulk_create(ingredient_creation)
+        IngredientInRecipe.objects.bulk_create(creation)
+
+    def create(self, validated_data):
+        ingredients = validated_data.pop('ingredients')
+        tags = validated_data.pop('tags')
+        recipe = Recipe.objects.create(**validated_data)
+        recipe.tags.set(tags)
+        self.ingredient_creation(recipe, ingredients)
         return recipe
 
     def update(self, instance, validated_data):
@@ -154,14 +166,7 @@ class RecipePostSerializer(serializers.ModelSerializer):
             instance.tags.set(tags)
         if ingredients is not None:
             instance.ingredients.clear()
-        ingredient_creation = [
-            IngredientInRecipe(
-                recipe=instance,
-                ingredient=ingredient['id'],
-                amount=ingredient['amount']
-            ) for ingredient in ingredients
-        ]
-        IngredientInRecipe.objects.bulk_create(ingredient_creation)
+        self.ingredient_creation(instance, ingredients)
         instance.save()
         return instance
 
@@ -218,6 +223,10 @@ class SubscribeSerializer(serializers.ModelSerializer):
     is_subscribed = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
     recipes = ShortRecipeSerializer(read_only=True, many=True)
+    recipes_count = serializers.IntegerField(
+        source='recipes.count',
+        read_only=True
+    )
 
     class Meta:
         model = User
@@ -230,9 +239,6 @@ class SubscribeSerializer(serializers.ModelSerializer):
             return False
         return Subscribe.objects.filter(follower=request.user,
                                         author=obj).exists()
-
-    def get_recipes_count(self, obj):
-        return obj.recipes.count()
 
 
 class AddSubscriptionSerializer(serializers.ModelSerializer):
