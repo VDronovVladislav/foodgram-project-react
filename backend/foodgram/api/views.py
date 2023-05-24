@@ -21,6 +21,7 @@ from .serializers import (AddFavoriteSerializer, AddShoppingCartSerializer,
                           RecipeReadSerializer, ShortRecipeSerializer,
                           SubscribeSerializer, SubscriptionSerializer,
                           TagSerializer, UserReadSerializer, UserSerializer)
+from .custom_func import add_item, remove_item
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -144,81 +145,12 @@ class CustomSetPasswordView(APIView):
         )
 
 
-class SubscribeView(APIView):
-    """Вью подписки/отписки от пользователя"""
-    def post(self, request, pk):
-        follower = request.user
-        data = {
-            'follower': follower.id,
-            'author': pk
-        }
-        context = {'request': request}
-        serializer = AddSubscriptionSerializer(data=data, context=context)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        author = User.objects.get(id=pk)
-        serializer = SubscribeSerializer(author)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def delete(self, request, pk):
-        follower = request.user
-        author = get_object_or_404(User, pk=pk)
-        Subscribe.objects.filter(follower=follower, author=author).delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
 class SubscriptionViewSet(viewsets.ReadOnlyModelViewSet):
     """Вьюсет просмотра подписок пользователя."""
     serializer_class = SubscriptionSerializer
 
     def get_queryset(self):
         return self.request.user.follower.all()
-
-
-class FavoriteView(APIView):
-    """Вью добавления/удаления рецепта из избранного."""
-    def post(self, request, id):
-        user = request.user
-        data = {
-            'user': user.id,
-            'recipe': id
-        }
-        context = {'request': request}
-        serializer = AddFavoriteSerializer(data=data, context=context)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        recipe = Recipe.objects.get(id=id)
-        serializer = ShortRecipeSerializer(recipe)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def delete(self, request, id):
-        user = request.user
-        recipe = get_object_or_404(Recipe, id=id)
-        Favorite.objects.filter(user=user, recipe=recipe).delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-class ShoppingCartView(APIView):
-    """Вью добавления/удаления рецепта из списка покупок."""
-    def post(self, request, id):
-        user = request.user
-        data = {
-            'user': user.id,
-            'recipe': id
-        }
-        context = {'request': request}
-        serializer = AddShoppingCartSerializer(data=data, context=context)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        recipe = Recipe.objects.get(id=id)
-        serializer = ShortRecipeSerializer(recipe)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def delete(self, request, id):
-        user = request.user
-        recipe = get_object_or_404(Recipe, id=id)
-        ShoppingList.objects.filter(user=user, recipe=recipe).delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class DownloadView(APIView):
@@ -244,3 +176,49 @@ class DownloadView(APIView):
         response['Content-Disposition'] = f'attachment; filename{filename}'
 
         return response
+
+
+class FavoriteView(APIView):
+    """Вью добавления/удаления рецепта из избранного."""
+    def post(self, request, id):
+        id = id
+        return add_item(
+            request, id, AddFavoriteSerializer, ShortRecipeSerializer,
+            Favorite, Recipe, 'recipe', 'user'
+        )
+
+    def delete(self, request, id):
+        id = id
+        return remove_item(request, id, Favorite, Recipe, 'recipe', 'user')
+
+
+class SubscribeView(APIView):
+    """Вью подписки/отписки от пользователя"""
+    def post(self, request, pk):
+        id = pk
+        return add_item(
+            request, id, AddSubscriptionSerializer, SubscribeSerializer,
+            User, 'author', 'follower'
+        )
+
+    def delete(self, request, pk):
+        id = pk
+        return remove_item(
+            request, id, Subscribe, User, 'author', 'follower'
+        )
+
+
+class ShoppingCartView(APIView):
+    """Вью добавления/удаления рецепта из списка покупок."""
+    def post(self, request, id):
+        id = id
+        return add_item(
+            request, id, AddShoppingCartSerializer, ShortRecipeSerializer,
+            Recipe, 'recipe', 'user'
+        )
+
+    def delete(self, request, id):
+        id = id
+        return remove_item(
+            request, id, ShoppingList, Recipe, 'recipe', 'user'
+        )

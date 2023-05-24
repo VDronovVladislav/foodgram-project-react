@@ -180,6 +180,7 @@ class ShortRecipeSerializer(serializers.ModelSerializer):
 
 class AddFavoriteSerializer(serializers.ModelSerializer):
     """Сериализатор добавления рецепта в избранное."""
+
     class Meta:
         model = Favorite
         fields = ('recipe', 'user')
