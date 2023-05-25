@@ -156,19 +156,12 @@ class RecipePostSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         ingredients = validated_data.pop('ingredients')
         tags = validated_data.pop('tags')
-        instance.name = validated_data.get('name', instance.name)
-        instance.text = validated_data.get('text', instance.text)
-        instance.cooking_time = validated_data.get(
-            'cookong_time', instance.cooking_time
-        )
-        instance.image = validated_data.get('image', instance.image)
         if tags is not None:
             instance.tags.set(tags)
         if ingredients is not None:
             instance.ingredients.clear()
         self.ingredient_creation(instance, ingredients)
-        instance.save()
-        return instance
+        return super().update(instance, validated_data)
 
 
 class ShortRecipeSerializer(serializers.ModelSerializer):

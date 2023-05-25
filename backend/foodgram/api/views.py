@@ -21,7 +21,7 @@ from .serializers import (AddFavoriteSerializer, AddShoppingCartSerializer,
                           RecipeReadSerializer, ShortRecipeSerializer,
                           SubscribeSerializer, SubscriptionSerializer,
                           TagSerializer, UserReadSerializer, UserSerializer)
-from .custom_func import add_item, remove_item
+from .utils import add_item, remove_item
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
