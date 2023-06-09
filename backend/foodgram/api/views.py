@@ -83,6 +83,27 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+# @api_view(['POST'])
+# @permission_classes([AllowAny])
+# def get_jwt_token(request):
+#     """Получение токена."""
+#     serializer = AuthTokenSerializer(data=request.data)
+#     serializer.is_valid(raise_exception=True)
+#     user = get_object_or_404(
+#         User,
+#         email=serializer.validated_data['email'],
+#         password=serializer.validated_data['password']
+#     )
+#     if user:
+#         token = AccessToken.for_user(user)
+#         token = Token.objects.get_or_create(user=user)
+#         return Response({'auth_token': f'{token[0]}'},
+#                         status=status.HTTP_201_CREATED)
+#     return Response(
+#         {'message': 'Пользователь не обнаружен'},
+#         status=status.HTTP_400_BAD_REQUEST
+#     )
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def get_jwt_token(request):
@@ -97,7 +118,10 @@ def get_jwt_token(request):
     if user:
         token = AccessToken.for_user(user)
         Token.objects.get_or_create(user=user, key=token)
-        return Response({'token': f'{token}'}, status=status.HTTP_201_CREATED)
+        return Response(
+            {'auth_token': f'{token}'},
+            status=status.HTTP_201_CREATED
+        )
     return Response(
         {'message': 'Пользователь не обнаружен'},
         status=status.HTTP_400_BAD_REQUEST
@@ -157,7 +181,7 @@ class DownloadView(APIView):
     """Вью загрузки списка покупок."""
     def get(self, request):
         items = IngredientInRecipe.objects.select_related(
-            'recipe', 'ingredient'
+            'recipсe', 'ingredient'
         ).filter(recipe__shopping_list__user=request.user)
         items = items.values(
             'ingredient__name', 'ingredient__measurement_unit'

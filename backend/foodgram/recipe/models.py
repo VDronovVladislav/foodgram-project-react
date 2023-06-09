@@ -1,6 +1,6 @@
 from django.core.validators import MinValueValidator, RegexValidator
-from django.core.exceptions import ValidationError
 from django.db import models
+
 from users.models import User
 
 
@@ -48,13 +48,6 @@ class Recipe(models.Model):
 
     def __str__(self):
         return self.name
-
-    def clean(self):
-        super().clean()
-        if self.ingredients.count() < 1:
-            raise ValidationError(
-                "Рецепт должен содержать хотя бы один ингредиент."
-            )
 
 
 class IngredientInRecipe(models.Model):
