@@ -129,7 +129,7 @@ class RecipePostSerializer(serializers.ModelSerializer):
 
     def validate_cooking_time(self, data):
         cooking_time = self.initial_data.get('cooking_time')
-        if cooking_time <= 0:
+        if int(cooking_time) <= 0:
             raise serializers.ValidationError(
                 'Время приготовления не может быть нулевым или отрицательным!'
             )
@@ -215,7 +215,6 @@ class AuthTokenSerializer(serializers.Serializer):
 class SubscribeSerializer(serializers.ModelSerializer):
     """Сериализатор подписки пользователя."""
     is_subscribed = serializers.SerializerMethodField()
-    recipes_count = serializers.SerializerMethodField()
     recipes = ShortRecipeSerializer(read_only=True, many=True)
     recipes_count = serializers.IntegerField(
         source='recipes.count',
@@ -248,15 +247,6 @@ class AddSubscriptionSerializer(serializers.ModelSerializer):
                 message='Вы уже подписались на данного пользователя!'
             )
         ]
-
-
-class SubscriptionSerializer(serializers.ModelSerializer):
-    """Сериализатор просмотра подписок пользователя."""
-    author = SubscribeSerializer()
-
-    class Meta:
-        model = Subscribe
-        fields = ('author',)
 
 
 class AddShoppingCartSerializer(serializers.ModelSerializer):

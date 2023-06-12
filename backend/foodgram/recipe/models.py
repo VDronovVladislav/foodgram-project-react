@@ -1,5 +1,8 @@
+from typing import Optional
+
 from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
+from django.db.models import Exists, OuterRef
 
 from users.models import User
 
@@ -27,6 +30,22 @@ class Tag(models.Model):
         return self.name
 
 
+class RecipeQuerySet(models.QuerySet):
+    def add_user_annotation(self, user_id: Optional[int]):
+        return self.annotate(
+            is_favorited=Exists(
+                Favorite.objects.filter(
+                    user_id=user_id, recipe__pk=OuterRef('pk')
+                )
+            ),
+            is_in_shopping_cart=Exists(
+                ShoppingList.objects.filter(
+                    user_id=user_id, recipe__pk=OuterRef('pk')
+                )
+            ),
+        )
+
+
 class Recipe(models.Model):
     author = models.ForeignKey(
         User,
@@ -44,7 +63,8 @@ class Recipe(models.Model):
         through='IngredientInRecipe',
     )
     cooking_time = models.IntegerField(validators=[MinValueValidator(1)])
-    tags = models.ManyToManyField(Tag)
+    tags = models.ManyToManyField(Tag, related_name='recipes')
+    objects = RecipeQuerySet.as_manager()
 
     def __str__(self):
         return self.name

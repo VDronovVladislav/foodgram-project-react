@@ -11,6 +11,8 @@ class Command(BaseCommand):
         ) as csvfile:
             reader = DictReader(csvfile)
             for row in reader:
-                ingredient = Ingredient(name=row['name'],
-                                        measurement_unit=row['measurement_unit'])
+                ingredient = Ingredient(
+                    name=row['name'],
+                    measurement_unit=row['measurement_unit']
+                )
                 ingredient.save()

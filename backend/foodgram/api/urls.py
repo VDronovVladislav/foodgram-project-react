@@ -19,7 +19,6 @@ router.register(
 
 
 urlpatterns = [
-    path('', include(router.urls)),
     path('auth/token/login/', get_jwt_token, name='login'),
     path('auth/token/logout/', delete_jwt_token, name='logout'),
     path('auth/users/set_password/', CustomSetPasswordView.as_view(),
@@ -32,5 +31,6 @@ urlpatterns = [
          name='favorite'),
     path('recipes/<int:id>/shopping_cart/', ShoppingCartView.as_view(),
          name='shopping_cart'),
+    path('', include(router.urls)),
     path('', include('djoser.urls')),
 ]

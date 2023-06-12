@@ -13,14 +13,14 @@ from rest_framework_simplejwt.tokens import AccessToken
 from users.models import User
 from recipe.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
                            ShoppingList, Subscribe, Tag)
-from .filters import TagsFilter
+from .filters import RecipeFilter
 from .permissions import AuthorOrReadOnly, ReadOnly
 from .serializers import (AddFavoriteSerializer, AddShoppingCartSerializer,
                           AddSubscriptionSerializer, AuthTokenSerializer,
                           IngredientSerializer, RecipePostSerializer,
                           RecipeReadSerializer, ShortRecipeSerializer,
-                          SubscribeSerializer, SubscriptionSerializer,
-                          TagSerializer, UserReadSerializer, UserSerializer)
+                          SubscribeSerializer, TagSerializer,
+                          UserReadSerializer, UserSerializer)
 from .utils import add_item, remove_item
 
 
@@ -37,7 +37,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     permission_classes = (AuthorOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
-    filterset_class = TagsFilter
+    filterset_class = RecipeFilter
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
@@ -49,6 +49,16 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         serializer.save(author=self.request.user)
+
+    def get_queryset(self):
+        queryset = Recipe.objects
+        user = self.request.user
+        queryset = queryset.add_user_annotation(user.pk)
+        if self.request.query_params.get('is_favorited'):
+            queryset = queryset.filter(is_favorited=True)
+        if self.request.query_params.get('is_in_shopping_cart'):
+            queryset = queryset.filter(is_in_shopping_cart=True)
+        return queryset
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
@@ -83,27 +93,6 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-# @api_view(['POST'])
-# @permission_classes([AllowAny])
-# def get_jwt_token(request):
-#     """Получение токена."""
-#     serializer = AuthTokenSerializer(data=request.data)
-#     serializer.is_valid(raise_exception=True)
-#     user = get_object_or_404(
-#         User,
-#         email=serializer.validated_data['email'],
-#         password=serializer.validated_data['password']
-#     )
-#     if user:
-#         token = AccessToken.for_user(user)
-#         token = Token.objects.get_or_create(user=user)
-#         return Response({'auth_token': f'{token[0]}'},
-#                         status=status.HTTP_201_CREATED)
-#     return Response(
-#         {'message': 'Пользователь не обнаружен'},
-#         status=status.HTTP_400_BAD_REQUEST
-#     )
-
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def get_jwt_token(request):
@@ -117,11 +106,9 @@ def get_jwt_token(request):
     )
     if user:
         token = AccessToken.for_user(user)
-        Token.objects.get_or_create(user=user, key=token)
-        return Response(
-            {'auth_token': f'{token}'},
-            status=status.HTTP_201_CREATED
-        )
+        token = Token.objects.get_or_create(user=user)
+        return Response({'auth_token': f'{token[0]}'},
+                        status=status.HTTP_201_CREATED)
     return Response(
         {'message': 'Пользователь не обнаружен'},
         status=status.HTTP_400_BAD_REQUEST
@@ -171,10 +158,10 @@ class CustomSetPasswordView(APIView):
 
 class SubscriptionViewSet(viewsets.ReadOnlyModelViewSet):
     """Вьюсет просмотра подписок пользователя."""
-    serializer_class = SubscriptionSerializer
+    serializer_class = SubscribeSerializer
 
     def get_queryset(self):
-        return self.request.user.follower.all()
+        return User.objects.filter(follower=self.request.user.id)
 
 
 class DownloadView(APIView):
@@ -208,7 +195,7 @@ class FavoriteView(APIView):
         id = id
         return add_item(
             request, id, AddFavoriteSerializer, ShortRecipeSerializer,
-            Favorite, Recipe, 'recipe', 'user'
+            Recipe, 'recipe', 'user'
         )
 
     def delete(self, request, id):
