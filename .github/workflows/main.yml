@@ -81,3 +81,4 @@ jobs:
               echo DB_PORT=${{ secrets.DB_PORT }} >> .env
               sudo docker-compose up -d
               sudo docker-compose exec -it backend bash python manage.py collectstatic -yes
+              
