@@ -68,10 +68,12 @@ jobs:
             username: ${{ secrets.USER }}
             key: ${{ secrets.SSH_KEY }}
             script: |
-              cd foodgram-project-react/infra
-              sudo docker pull ${{ secrets.DOCKER_USERNAME }}/foodgram:latest
-              sudo docker pull ${{ secrets.DOCKER_USERNAME }}/frontend:latest
-              sudo docker-compose down
+              # cd foodgram-project-react/infra
+              # sudo docker pull ${{ secrets.DOCKER_USERNAME }}/foodgram:latest
+              # sudo docker pull ${{ secrets.DOCKER_USERNAME }}/frontend:latest
+              # sudo docker-compose down
+              # sudo docker-compose rm backend
+              sudo docker-compose stop
               sudo docker-compose rm backend
               touch .env
               echo DB_ENGINE=${{ secrets.DB_ENGINE }} >> .env
