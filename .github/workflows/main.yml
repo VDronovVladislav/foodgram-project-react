@@ -73,6 +73,7 @@ jobs:
               # sudo docker pull ${{ secrets.DOCKER_USERNAME }}/frontend:latest
               # sudo docker-compose down
               # sudo docker-compose rm backend
+              cd foodgram-project-react/infra
               sudo docker-compose stop
               sudo docker-compose rm backend
               touch .env
