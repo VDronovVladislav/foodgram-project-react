@@ -6,7 +6,7 @@ services:
     image: postgres:14.0
     container_name: postgresql
     env_file:
-      - .env
+      - ./.env
     volumes:
       - db_data:/var/lib/postgresql/data/
     restart: always
@@ -15,7 +15,7 @@ services:
 
   backend:
     build:
-      context: ../backend/
+      context: ../backend/foodgram
       dockerfile: Dockerfile
     volumes:
       - static_value:/app/static/
