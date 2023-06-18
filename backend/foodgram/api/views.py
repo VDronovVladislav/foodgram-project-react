@@ -161,7 +161,7 @@ class SubscriptionViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = SubscribeSerializer
 
     def get_queryset(self):
-        return User.objects.filter(follower=self.request.user.id)
+        return User.objects.filter(following__follower=self.request.user)
 
 
 class DownloadView(APIView):

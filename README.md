@@ -48,9 +48,9 @@ docker-compose exec web python manage.py collectstatic --no-input
 
 Адреса для проверки проекта:
 ```
-http://84.201.129.205/api/v1/
-http://84.201.129.205/admin/
-http://84.201.129.205/redoc/
+foodgramvladproject.ddns.net/api/
+foodgramvladproject.ddns.net/admin/
+foodgramvladproject.ddns.net/redoc/
 foodgramvladproject.ddns.net
 ```
 
