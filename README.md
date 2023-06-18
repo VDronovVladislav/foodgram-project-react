@@ -74,4 +74,4 @@ Workflow:
 > ![workflow](https://github.com/VDronovVladislav/foodgram-project-react/actions/workflows/main.yml/badge.svg)
 
 # Об авторе:
-Привет. Меня зовут Дронов Владислав. Студент 19+ когорты направления Python-разработки. Это мой курсовой проект.
+Привет. Меня зовут Дронов Владислав. Студент 19+ когорты направления Python-разработки. Это мой курсовой проект!
