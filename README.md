@@ -48,10 +48,10 @@ docker-compose exec web python manage.py collectstatic --no-input
 
 Адреса для проверки проекта:
 ```
-foodgramvladproject.ddns.net/api/
-foodgramvladproject.ddns.net/admin/
-foodgramvladproject.ddns.net/redoc/
-foodgramvladproject.ddns.net
+http://foodgramvladproject.ddns.net/api/
+http://foodgramvladproject.ddns.net/admin/
+http://foodgramvladproject.ddns.net/api/docs/
+http://foodgramvladproject.ddns.net/recipes
 ```
 
 Учетные данные админки для проверки проекта:
