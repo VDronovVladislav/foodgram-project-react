@@ -54,7 +54,7 @@ foodgramvladproject.ddns.net/redoc/
 foodgramvladproject.ddns.net
 ```
 
-Данные админки:
+Учетные данные админки для проверки проекта:
 ```
 Логин: vdron
 Пароль: vdron717
