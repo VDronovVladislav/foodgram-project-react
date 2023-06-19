@@ -1,6 +1,6 @@
 from typing import Optional
 
-from django.core.validators import MinValueValidator, RegexValidator
+from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models import Exists, OuterRef
 
@@ -62,7 +62,7 @@ class Recipe(models.Model):
         Ingredient,
         through='IngredientInRecipe',
     )
-    cooking_time = models.IntegerField(validators=[MinValueValidator(1)])
+    cooking_time = models.IntegerField()
     tags = models.ManyToManyField(Tag, related_name='recipes')
     objects = RecipeQuerySet.as_manager()
 

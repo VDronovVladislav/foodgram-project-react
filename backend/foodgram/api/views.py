@@ -13,7 +13,7 @@ from rest_framework_simplejwt.tokens import AccessToken
 from users.models import User
 from recipe.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
                            ShoppingList, Subscribe, Tag)
-from .filters import RecipeFilter
+from .filters import RecipeFilter, IngredientFilter
 from .permissions import AuthorOrReadOnly, ReadOnly
 from .serializers import (AddFavoriteSerializer, AddShoppingCartSerializer,
                           AddSubscriptionSerializer, AuthTokenSerializer,
@@ -67,6 +67,8 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = IngredientSerializer
     permission_classes = (ReadOnly,)
     pagination_class = None
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = IngredientFilter
 
 
 class UserViewSet(viewsets.ModelViewSet):

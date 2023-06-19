@@ -54,6 +54,12 @@ foodgramvladproject.ddns.net/redoc/
 foodgramvladproject.ddns.net
 ```
 
+Данные админки:
+```
+Логин: vdron
+Пароль: vdron717
+```
+
 Для заполнения базы данными поочередно и в таком порядке выполнить команды:
 ```
 docker-compose exec web python manage.py load_tags_data

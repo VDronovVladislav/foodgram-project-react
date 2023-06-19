@@ -7,6 +7,7 @@ from rest_framework.validators import UniqueTogetherValidator
 from recipe.models import (Ingredient, Tag, Recipe, Subscribe, Favorite,
                            ShoppingList, IngredientInRecipe)
 from users.models import User
+from .validators import CustomValidationException
 
 
 class Base64ImageField(serializers.ImageField):
@@ -126,16 +127,16 @@ class RecipePostSerializer(serializers.ModelSerializer):
     def validate_ingredients(self, data):
         ingredients = self.initial_data.get('ingredients')
         if 'ingredients' not in self.initial_data:
-            raise serializers.ValidationError('Добавьте ингредиенты!')
+            raise CustomValidationException('Добавьте ингредиенты!')
         ingredient_list = []
         for ingredient in ingredients:
             if ingredient in ingredient_list:
-                raise serializers.ValidationError(
-                    'Ингредиенты не должны повторяться'
+                raise CustomValidationException(
+                    'Ингредиенты не должны повторяться!'
                 )
             ingredient_list.append(ingredient)
         if int(ingredient['amount']) < 1:
-            raise serializers.ValidationError(
+            raise CustomValidationException(
                 'Ингредиент не может быть нулевым или отрицательным!'
             )
         return data
@@ -143,7 +144,7 @@ class RecipePostSerializer(serializers.ModelSerializer):
     def validate_cooking_time(self, data):
         cooking_time = self.initial_data.get('cooking_time')
         if int(cooking_time) <= 0:
-            raise serializers.ValidationError(
+            raise CustomValidationException(
                 'Время приготовления не может быть нулевым или отрицательным!'
             )
         return data
