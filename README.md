@@ -1,7 +1,10 @@
-### Курсовой проект foodgram-project-react:
+### Веб проект для добавления рецептов от пользователей.
+Можно регистрироваться и создавать собственные рецепты. Подписываться друг
+на друга. Добавлять ингредиенты рецептов в список покупок (скачивая файл).
+## Стек:
+Django, Gunicorn, nginx, Rest API (DRF), PostgreSQL, Djoser, Simple JWT, Docker, CI/CD (GitHub
+Actions), React, Yandex Cloud.
 ## инcтрукция по запуску:
-
-  
 Клонировать репозиторий и перейти в него в командной строке:
   
 ```
@@ -45,15 +48,6 @@ docker-compose exec backend python manage.py createsuperuser
 ```
 docker-compose exec web python manage.py collectstatic --no-input
 ```
-
-Адреса для проверки проекта:
-```
-http://foodgramvladproject.ddns.net/api/
-http://foodgramvladproject.ddns.net/admin/
-http://foodgramvladproject.ddns.net/api/docs/
-http://foodgramvladproject.ddns.net/recipes
-```
-
 Учетные данные админки для проверки проекта:
 ```
 Логин: vdron
@@ -78,6 +72,3 @@ MIT License
 
 Workflow:
 > ![workflow](https://github.com/VDronovVladislav/foodgram-project-react/actions/workflows/main.yml/badge.svg)
-
-# Об авторе:
-Привет. Меня зовут Дронов Владислав. Студент 19+ когорты направления Python-разработки. Это мой курсовой проект!
